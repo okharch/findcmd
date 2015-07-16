@@ -174,12 +174,10 @@ sub process_start_file {
         for (m{^\.\s+(\S+)},m{\s*source\s+(\S+)}) {
             s/~/$ENV{HOME}/;
             my ($cwd) = $ARGV =~ m{(.*)/};
-    $DB::single = 2;
             my $f = $_;
             push @files, m{^/}?$_:grep(-f $_,map "$_/$f", $cwd, split /:/, $ENV{PATH});
         }
     }
-    $DB::single = 2;
     process_start_file(@files);
 }
 
