@@ -163,22 +163,27 @@ sub build_bin {
 
 my %sf_processed;
 sub process_start_file {
-    local @ARGV = grep not (exists $sf_processed{$_}) && -f,@_;
-    return unless @ARGV;
-    #print STDERR "processing start files: ",@ARGV;
-    $sf_processed{$_} = undef for @ARGV;
-    my @files;
-    while (<>) {
-        $line{"alias:$_"} = "$ARGV:$." for m{^alias\s+(\S+?)=};
-        $line{"function:$_"} = "$ARGV:$." for m{^function\s+(\S+?)},m{^([^ ()]+)\s*\(\)};
-        for (m{^\.\s+(\S+)},m{\s*source\s+(\S+)}) {
-            s/~/$ENV{HOME}/;
-            my ($cwd) = $ARGV =~ m{(.*)/};
-            my $f = $_;
-            push @files, m{^/}?$_:grep(-f $_,map "$_/$f", $cwd, split /:/, $ENV{PATH});
+    my @files = grep -f,@_;
+    return unless @files;
+    for my $file (@files) {
+        next if exists $sf_processed{$file};
+        my ($cwd) = $file =~ m{(.*)/};
+        $sf_processed{$file} = undef;
+        open(my $fh, $file);
+        while (<$fh>) {
+            $line{"alias:$_"} = "$file:$." for m{^alias\s+(\S+?)=};
+            $line{"function:$_"} = "$file:$." for m{^function\s+(\S+?)},m{^([^ ()]+)\s*\(\)};
+            # process sourced scripts
+            for (m{^\.\s+(\S+)},m{^\s*source\s+(\S+)}) {
+                s/~/$ENV{HOME}/; # change "~" to $HOME
+                s{^./}{$cwd/}; # change ./ to current working directory
+                my $f = $_;
+                # if file does not have full path let's look for it in PATH
+                my ($fullpath) = m{^/}?$_:grep(-f $_,map "$_/$f", split /:/, $ENV{PATH});
+                process_start_file($fullpath);
+            }
         }
     }
-    process_start_file(@files);
 }
 
 __END__
