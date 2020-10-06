@@ -1,7 +1,12 @@
 # findcmd
-findcmd.pl - quick find bash command using fuzzy patterns
+findcmd.pl - quickly find bash command using fuzzy patterns
 
 If you remember you created/used command that sounds alike but do not remember exact spelling or whether it was alias/script/function/binary - this command is for you.
+
+Note: behaviour for collecting of aliases and functions from current shell has been changed. 
+To use this script add alias findcmd to your ~/.bashrc:
+alias findcmd='typeset -f >~/.functions;alias >~/.aliases;findcmd.pl -functions_file ~/.functions -aliases_file=~/.aliases'
+This should work without flaws.
 
 It creates the list of all available commands at current login bash instance.
 

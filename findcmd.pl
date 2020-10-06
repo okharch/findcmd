@@ -6,8 +6,12 @@ use warnings;
 use Getopt::Long;
 use Pod::Usage;
 use Text::Soundex;
+use File::Slurp qw(read_file);
 
-my $path_for_scripts = "$ENV{HOME}/bin";
+my $HOME = $ENV{HOME};
+my $path_for_scripts = "$HOME/bin";
+my $aliases_file = "$HOME/.aliases";
+my $functions_file = "$HOME/.functions";
 my $max_script_size = 1024;
 my $help = 0;
 my $soundex_weight = 10; # score assigned to soundex hit
@@ -28,6 +32,8 @@ GetOptions(
     'regex_weight=i' => \$regex_weight,
     'path_for_scripts=s' => \$path_for_scripts,
     'max_script_size=i' => \$max_script_size,
+	'aliases_file=s', \$aliases_file,
+	'functions_file=s', \$functions_file,
 );
 my %path_for_scripts = map {$_ => undef} split /:/, $path_for_scripts;
 
@@ -97,7 +103,7 @@ sub rebuild_cmd_info {
 }
 
 sub build_function {
-    my @functions = `/bin/bash --login -c "typeset -f"`;
+    my @functions = read_file $functions_file;
     my %functions;
     my ($function,@lines);
     for (@functions) {
@@ -121,8 +127,7 @@ sub build_alias {
 
 sub ls_bin {
     my (%bin,$current_path);
-    my $PATH = join " ",map qq{"$_"}, split /:/, $ENV{PATH}; 
-    #print STDERR $PATH;exit;
+    my $PATH = join " ",map qq{"$_"}, grep -d, split /:/, $ENV{PATH}; 
     open my $ls, "-|", "ls -l --time-style=+%s $PATH";
     while (<$ls>) {
         chomp;
